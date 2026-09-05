@@ -1,0 +1,19 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+*.pem
+*.key
+
+# VS Code
+.vscode/
