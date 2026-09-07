@@ -38,3 +38,14 @@ variable "ami_id" {
   description = "Ubuntu 24.04 AMI for Stockholm"
   type        = string
 }
+variable "private_subnet_2_cidr" {
+  description = "CIDR block for the second private subnet"
+  type        = string
+  default     = "10.0.3.0/24"
+}
+
+variable "availability_zone_2" {
+  description = "Second Availability Zone"
+  type        = string
+  default     = "eu-north-1b"
+}

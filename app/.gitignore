@@ -17,3 +17,5 @@ crash.log
 
 # VS Code
 .vscode/
+# Lambda build artifact
+*.zip

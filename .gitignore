@@ -17,3 +17,7 @@ __pycache__/
 
 # VS Code
 .vscode/
+
+terraform/lambda_function.zip
+
+terraform/lambda_function.zip
