@@ -39,3 +39,22 @@ jobs:
       - name: Verify Docker image
         run: |
           docker images cloudops-api
+
+  deploy:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to CloudOps EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/CloudOps-Enterprise-Platform
+            git pull origin main
+            sudo systemctl restart k3s
+            sleep 30
+            sudo k3s kubectl rollout restart deployment/cloudops-api
+            sudo k3s kubectl rollout status deployment/cloudops-api --timeout=120s
