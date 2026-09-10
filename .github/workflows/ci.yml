@@ -40,21 +40,44 @@ jobs:
         run: |
           docker images cloudops-api
 
-  deploy:
+    deploy:
     needs: test-and-build
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Copy application and Kubernetes files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "app,kubernetes"
+          target: "/home/ubuntu/CloudOps-Enterprise-Platform"
+          overwrite: true
+
       - name: Deploy to CloudOps EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 10m
           script: |
             cd /home/ubuntu/CloudOps-Enterprise-Platform
-            git pull origin main
-            sudo systemctl restart k3s
-            sleep 30
+
+            docker build -t cloudops-api:2.0 ./app
+
+            docker save cloudops-api:2.0 -o /tmp/cloudops-api.tar
+
+            sudo k3s ctr -n k8s.io images import /tmp/cloudops-api.tar
+
+            sudo k3s kubectl apply -f kubernetes/cloudops-api.yaml
+
             sudo k3s kubectl rollout restart deployment/cloudops-api
+
             sudo k3s kubectl rollout status deployment/cloudops-api --timeout=120s
+
+            rm -f /tmp/cloudops-api.tar
