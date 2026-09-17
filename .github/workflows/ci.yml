@@ -54,11 +54,11 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "app,kubernetes"
+          source: "app,kubernetes,microservices,ml-service,data-ml"
           target: "/home/ubuntu/CloudOps-Enterprise-Platform"
           overwrite: true
 
-      - name: Deploy to CloudOps EC2
+      - name: Deploy all CloudOps services
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -68,16 +68,40 @@ jobs:
           script: |
             cd /home/ubuntu/CloudOps-Enterprise-Platform
 
+            echo "Building CloudOps API..."
             docker build -t cloudops-api:2.0 ./app
-
             docker save cloudops-api:2.0 -o /tmp/cloudops-api.tar
-
             sudo k3s ctr -n k8s.io images import /tmp/cloudops-api.tar
 
-            sudo k3s kubectl apply -f kubernetes/cloudops-api.yaml
+            echo "Building notification service..."
+            docker build -t notification-service:1.0 ./microservices/notification-service
+            docker save notification-service:1.0 -o /tmp/notification-service.tar
+            sudo k3s ctr -n k8s.io images import /tmp/notification-service.tar
 
+            echo "Building ML service..."
+            docker build -t ml-service:1.0 ./ml-service
+            docker save ml-service:1.0 -o /tmp/ml-service.tar
+            sudo k3s ctr -n k8s.io images import /tmp/ml-service.tar
+
+            echo "Applying Kubernetes manifests..."
+            sudo k3s kubectl apply --validate=false -f kubernetes/cloudops-api.yaml
+            sudo k3s kubectl apply --validate=false -f kubernetes/notification-service.yaml
+            sudo k3s kubectl apply --validate=false -f kubernetes/ml-service.yaml
+            sudo k3s kubectl apply --validate=false -f kubernetes/cloudops-ingress.yaml
+            sudo k3s kubectl apply --validate=false -f kubernetes/ml-ingress.yaml
+
+            echo "Restarting deployments..."
             sudo k3s kubectl rollout restart deployment/cloudops-api
+            sudo k3s kubectl rollout restart deployment/notification-service
+            sudo k3s kubectl rollout restart deployment/ml-service
 
+            echo "Waiting for deployments..."
             sudo k3s kubectl rollout status deployment/cloudops-api --timeout=120s
+            sudo k3s kubectl rollout status deployment/notification-service --timeout=120s
+            sudo k3s kubectl rollout status deployment/ml-service --timeout=120s
 
             rm -f /tmp/cloudops-api.tar
+            rm -f /tmp/notification-service.tar
+            rm -f /tmp/ml-service.tar
+
+            echo "Deployment completed successfully."

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudops-api
+  labels:
+    app: cloudops-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudops-api
+  template:
+    metadata:
+      labels:
+        app: cloudops-api
+    spec:
+      containers:
+        - name: cloudops-api
+          image: docker.io/library/cloudops-api:2.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOST
+              value: "cloudops-enterprise-db.cze44e2myaqb.eu-north-1.rds.amazonaws.com"
+            - name: DB_NAME
+              value: "cloudops"
+            - name: DB_USER
+              value: "cloudopsadmin"
+            - name: DB_PASSWORD
+              valueFrom:
+               secretKeyRef:
+                 name: cloudops-db-secret
+                 key: DB_PASSWORD
+            - name: DB_PORT
+              value: "5432"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudops-api-service
+spec:
+  selector:
+    app: cloudops-api
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: NodePort
