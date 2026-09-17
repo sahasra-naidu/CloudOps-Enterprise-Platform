@@ -1,0 +1,9 @@
+id,title,status
+1,Database connection issue,OPEN
+2,API deployment request,CLOSED
+3,Server performance issue,OPEN
+4,Notification failure,OPEN
+5,Application access request,CLOSED
+6,Database backup request,CLOSED
+7,Kubernetes deployment issue,OPEN
+8,Network connectivity issue,OPEN
